@@ -1,31 +1,34 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import BudgetSection from '../components/BudgetSection';
+import { useExpenseStore } from '../store/expenseStore';
 import TransactionForm from '../components/TransactionForm';
+import DashboardCards from '../components/DashboardCards';
+import BudgetSection from '../components/BudgetSection';
 import TransactionsList from '../components/TransactionsList';
-import Chart from '../components/Chart';
-import DeleteModal from '../components/DeleteModal';
+import Charts from '../components/Charts';
+import Sidebar from '../components/Sidebar';
+import Navbar from '../components/Navbar';
 
-function Dashboard({ user, onLogout, showToast }) {
-  const [transactions, setTransactions] = useState([]);
-  const [budget, setBudget] = useState({ amount: 5000, month: new Date().getMonth() });
-  const [showBudgetModal, setShowBudgetModal] = useState(false);
-  const [budgetInput, setBudgetInput] = useState(budget.amount);
-  const [deleteModal, setDeleteModal] = useState({ show: false, id: null });
-  const [loading, setLoading] = useState(true);
+export default function Dashboard({ user, onLogout }) {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activePage, setActivePage] = useState('dashboard');
+  const [showTransactionForm, setShowTransactionForm] = useState(false);
+  
+  const {
+    transactions,
+    setTransactions,
+    budget,
+    addTransaction,
+    deleteTransaction,
+    updateBudget,
+    getTotalExpenses,
+    getTotalIncome,
+    getBudgetStatus,
+  } = useExpenseStore();
 
-  // Load data from localStorage
+  // Load user data from localStorage
   useEffect(() => {
-    setLoading(true);
-    // Simulate loading delay for UX
-    setTimeout(() => {
-      loadTransactions();
-      loadBudget();
-      setLoading(false);
-    }, 300);
-  }, [user.id]);
-
-  const loadTransactions = () => {
     const key = `transactions_${user.id}`;
     const data = localStorage.getItem(key);
     if (data) {
@@ -33,72 +36,221 @@ function Dashboard({ user, onLogout, showToast }) {
         setTransactions(JSON.parse(data));
       } catch (e) {
         console.error('Error loading transactions:', e);
-        setTransactions([]);
       }
     }
-  };
 
-  const loadBudget = () => {
-    const key = `budget_${user.id}`;
-    const data = localStorage.getItem(key);
-    if (data) {
+    const budgetKey = `budget_${user.id}`;
+    const budgetData = localStorage.getItem(budgetKey);
+    if (budgetData) {
       try {
-        const budgetData = JSON.parse(data);
-        setBudget(budgetData);
-        setBudgetInput(budgetData.amount);
+        const parsed = JSON.parse(budgetData);
+        updateBudget(parsed.amount);
       } catch (e) {
         console.error('Error loading budget:', e);
       }
     }
-  };
+  }, [user.id]);
 
   // Save transactions to localStorage
-  const saveTransactions = (txns) => {
+  useEffect(() => {
     const key = `transactions_${user.id}`;
-    localStorage.setItem(key, JSON.stringify(txns));
-  };
+    localStorage.setItem(key, JSON.stringify(transactions));
+  }, [transactions, user.id]);
 
-  // Add transaction
   const handleAddTransaction = (transaction) => {
-    const newTransaction = {
-      ...transaction,
-      id: Date.now(),
-      createdAt: new Date().toISOString(),
-    };
+    addTransaction(transaction);
+    const totalExpenses = getTotalExpenses();
+    
+    // Show alerts
+    if (totalExpenses >= budget.amount * 0.8 && totalExpenses < budget.amount) {
+      toast('⚠️ You\'ve reached 80% of your budget', {
+        icon: '⚠️',
+        duration: 3000,
+      });
+    } else if (totalExpenses >= budget.amount) {
+      toast('🚨 Budget exceeded! Please review your spending', {
+        icon: '🚨',
+        duration: 3000,
+      });
+    } else {
+      toast.success('✅ Transaction added successfully!');
+    }
+    
+    setShowTransactionForm(false);
+  };
 
-    const newTransactions = [newTransaction, ...transactions];
-    setTransactions(newTransactions);
-    saveTransactions(newTransactions);
-    toast.success('Transaction added successfully!', { duration: 2000 });
+  const handleDeleteTransaction = (id) => {
+    deleteTransaction(id);
+    toast.success('Transaction deleted');
+  };
 
-    // Check budget
-    const totalExpense = newTransactions.reduce((sum, t) => t.type === 'expense' ? sum + parseFloat(t.amount) : sum, 0);
-    if (totalExpense > budget.amount) {
-      setTimeout(() => {
-        toast('Budget exceeded! Monitor your spending.', { 
-          icon: '⚠️',
-          duration: 3000,
-          style: {
-            background: '#FFFBEB',
-            color: '#78350F'
-          }
-        });
-      }, 500);
+  const handleUpdateBudget = (amount) => {
+    updateBudget(amount);
+    const key = `budget_${user.id}`;
+    localStorage.setItem(key, JSON.stringify({ amount, month: new Date().getMonth(), year: new Date().getFullYear() }));
+    toast.success('Budget updated successfully!');
+  };
+
+  const renderPage = () => {
+    switch (activePage) {
+      case 'dashboard':
+        return (
+          <div className="space-y-6">
+            {/* Dashboard Cards */}
+            <DashboardCards 
+              totalIncome={getTotalIncome()}
+              totalExpenses={getTotalExpenses()}
+              budget={budget}
+              budgetStatus={getBudgetStatus()}
+            />
+            
+            {/* Main Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Charts Section */}
+              <div className="lg:col-span-2 space-y-6">
+                <Charts transactions={transactions} />
+              </div>
+              
+              {/* Budget & Quick Actions */}
+              <div className="space-y-6">
+                <BudgetSection 
+                  budget={budget}
+                  totalExpenses={getTotalExpenses()}
+                  onUpdateBudget={handleUpdateBudget}
+                />
+                
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowTransactionForm(true)}
+                  className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                >
+                  + Add Transaction
+                </motion.button>
+              </div>
+            </div>
+            
+            {/* Transactions Section */}
+            <div className="mt-8">
+              <h2 className="text-2xl font-bold text-slate-900 mb-4">Recent Transactions</h2>
+              <TransactionsList 
+                transactions={transactions}
+                onDelete={handleDeleteTransaction}
+              />
+            </div>
+          </div>
+        );
+      
+      case 'transactions':
+        return (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h1 className="text-3xl font-bold text-slate-900">All Transactions</h1>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowTransactionForm(true)}
+                className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold"
+              >
+                + Add
+              </motion.button>
+            </div>
+            <TransactionsList 
+              transactions={transactions}
+              onDelete={handleDeleteTransaction}
+              showFilters
+            />
+          </div>
+        );
+      
+      case 'budget':
+        return (
+          <div className="space-y-6">
+            <h1 className="text-3xl font-bold text-slate-900">Budget Management</h1>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <BudgetSection 
+                budget={budget}
+                totalExpenses={getTotalExpenses()}
+                onUpdateBudget={handleUpdateBudget}
+                fullView
+              />
+            </div>
+          </div>
+        );
+      
+      case 'settings':
+        return (
+          <div className="space-y-6">
+            <h1 className="text-3xl font-bold text-slate-900">Settings</h1>
+            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+              <p className="text-slate-600">Settings coming soon...</p>
+            </div>
+          </div>
+        );
+      
+      default:
+        return null;
     }
   };
 
-  // Delete transaction
-  const handleDeleteTransaction = () => {
-    if (deleteModal.id) {
-      const newTransactions = transactions.filter(t => t.id !== deleteModal.id);
-      setTransactions(newTransactions);
-      saveTransactions(newTransactions);
-      toast.success('Transaction deleted', { duration: 2000 });
-      setDeleteModal({ show: false, id: null });
-    }
-  };
+  return (
+    <div className="flex h-screen bg-slate-50 overflow-hidden">
+      {/* Sidebar */}
+      <Sidebar 
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
+        activePage={activePage}
+        setActivePage={setActivePage}
+        user={user}
+        onLogout={onLogout}
+      />
+      
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Navbar */}
+        <Navbar 
+          user={user}
+          onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+          onLogout={onLogout}
+        />
+        
+        {/* Content Area */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-8">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activePage}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {renderPage()}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </main>
+      </div>
+      
+      {/* Transaction Form Modal */}
+      <AnimatePresence>
+        {showTransactionForm && (
+          <TransactionForm
+            onAdd={handleAddTransaction}
+            onClose={() => setShowTransactionForm(false)}
+          />
+        )}
+      </AnimatePresence>
 
-  // Set budget
+      {/* Delete Confirmation Modal */}
+      <DeleteModal
+        show={deleteModal.show}
+        onConfirm={handleDeleteTransaction}
+        onCancel={() => setDeleteModal({ show: false, id: null })}
+      />
+    </div>
+  );
+}
   const handleSetBudget = () => {
     const amount = parseFloat(budgetInput);
     if (isNaN(amount) || amount <= 0) {

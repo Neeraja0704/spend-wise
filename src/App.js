@@ -1,92 +1,95 @@
 import React, { useState, useEffect } from 'react';
-import toast, { Toaster } from 'react-hot-toast';
-import './App.css';
-import './styles/theme.css';
+import { Toaster } from 'react-hot-toast';
+import { useExpenseStore } from './store/expenseStore';
+import { getCurrentUser, isAuthenticated } from './services/authService';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
+import './index.css';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('login');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { setUser, logout: storeLogout } = useExpenseStore();
 
   // Check authentication on mount
   useEffect(() => {
-    const user = localStorage.getItem('currentUser');
-    if (user) {
-      setIsAuthenticated(true);
-      setCurrentUser(JSON.parse(user));
-      setCurrentPage('dashboard');
-    }
-  }, []);
+    const checkAuth = () => {
+      const user = getCurrentUser();
+      if (user && isAuthenticated()) {
+        setCurrentUser(user);
+        setUser(user);
+        setCurrentPage('dashboard');
+      }
+      setIsLoading(false);
+    };
 
-  // Show toast notification
-  const showToast = (message, type = 'success') => {
-    if (type === 'success') {
-      toast.success(message, { duration: 3000, position: 'top-right' });
-    } else if (type === 'error') {
-      toast.error(message, { duration: 3000, position: 'top-right' });
-    } else if (type === 'warning') {
-      toast(message, { duration: 3000, position: 'top-right', icon: '⚠️' });
-    }
-  };
+    checkAuth();
+  }, [setUser]);
 
-  // Handle login
   const handleLogin = (email, password) => {
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     const user = users.find(u => u.email === email && u.password === password);
     
     if (user) {
       localStorage.setItem('currentUser', JSON.stringify(user));
-      setIsAuthenticated(true);
       setCurrentUser(user);
+      setUser(user);
       setCurrentPage('dashboard');
-      showToast(`Welcome back, ${user.name}!`, 'success');
-    } else {
-      showToast('Invalid email or password', 'error');
+      
+      // Initialize user data
+      const userDataKey = `transactions_${user.id}`;
+      const budgetKey = `budget_${user.id}`;
+      
+      if (!localStorage.getItem(userDataKey)) {
+        localStorage.setItem(userDataKey, JSON.stringify([]));
+      }
+      if (!localStorage.getItem(budgetKey)) {
+        localStorage.setItem(budgetKey, JSON.stringify({ amount: 5000, month: new Date().getMonth(), year: new Date().getFullYear() }));
+      }
     }
   };
 
-  // Handle Google login - realistic simulation
   const handleGoogleLogin = () => {
     const googleUser = {
-      id: Date.now(),
+      id: Date.now().toString(),
       email: `user_${Date.now()}@gmail.com`,
       name: 'Google User',
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=google${Date.now()}`,
       loginMethod: 'google',
       createdAt: new Date().toISOString()
     };
 
+    let users = JSON.parse(localStorage.getItem('users') || '[]');
+    users.push(googleUser);
+    localStorage.setItem('users', JSON.stringify(users));
     localStorage.setItem('currentUser', JSON.stringify(googleUser));
+    
+    setCurrentUser(googleUser);
+    setUser(googleUser);
+    setCurrentPage('dashboard');
+
+    // Initialize user data
     const userDataKey = `transactions_${googleUser.id}`;
     const budgetKey = `budget_${googleUser.id}`;
-    
-    if (!localStorage.getItem(userDataKey)) {
-      localStorage.setItem(userDataKey, JSON.stringify([]));
-      localStorage.setItem(budgetKey, JSON.stringify({ amount: 5000, month: new Date().getMonth() }));
-    }
-
-    setIsAuthenticated(true);
-    setCurrentUser(googleUser);
-    setCurrentPage('dashboard');
-    showToast('Logged in with Google successfully!', 'success');
+    localStorage.setItem(userDataKey, JSON.stringify([]));
+    localStorage.setItem(budgetKey, JSON.stringify({ amount: 5000, month: new Date().getMonth(), year: new Date().getFullYear() }));
   };
 
-  // Handle signup
   const handleSignup = (email, password, name) => {
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     
     if (users.find(u => u.email === email)) {
-      showToast('Email already registered', 'error');
       return;
     }
 
     const newUser = {
-      id: Date.now(),
+      id: Date.now().toString(),
       email,
       password,
       name,
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
       createdAt: new Date().toISOString()
     };
 
@@ -98,57 +101,64 @@ function App() {
     const userDataKey = `transactions_${newUser.id}`;
     const budgetKey = `budget_${newUser.id}`;
     localStorage.setItem(userDataKey, JSON.stringify([]));
-    localStorage.setItem(budgetKey, JSON.stringify({ amount: 5000, month: new Date().getMonth() }));
+    localStorage.setItem(budgetKey, JSON.stringify({ amount: 5000, month: new Date().getMonth(), year: new Date().getFullYear() }));
 
-    setIsAuthenticated(true);
     setCurrentUser(newUser);
+    setUser(newUser);
     setCurrentPage('dashboard');
-    showToast(`Welcome ${name}! Your account is ready.`, 'success');
   };
 
-  // Handle logout
   const handleLogout = () => {
     localStorage.removeItem('currentUser');
-    setIsAuthenticated(false);
     setCurrentUser(null);
+    storeLogout();
     setCurrentPage('login');
-    showToast('Logged out successfully', 'success');
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center w-screen h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 mb-4 shadow-lg">
+            <span className="text-3xl animate-pulse">💰</span>
+          </div>
+          <p className="text-slate-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="app">
+    <>
       <Toaster 
         position="top-right" 
         reverseOrder={false}
         toastOptions={{
-          success: { style: { background: '#ECFDF5', color: '#065F46' } },
-          error: { style: { background: '#FEF2F2', color: '#7F1D1D' } }
+          success: { duration: 3000 },
+          error: { duration: 3000 },
         }}
       />
       
-      {!isAuthenticated ? (
-        <div className="auth-container">
-          {currentPage === 'login' ? (
-            <Login 
-              onLogin={handleLogin}
-              onGoogleLogin={handleGoogleLogin}
-              onSwitchToSignup={() => setCurrentPage('signup')}
-            />
-          ) : (
-            <Signup 
-              onSignup={handleSignup} 
-              onSwitchToLogin={() => setCurrentPage('login')}
-            />
-          )}
-        </div>
+      {!currentUser ? (
+        currentPage === 'login' ? (
+          <Login 
+            onLogin={handleLogin}
+            onGoogleLogin={handleGoogleLogin}
+            onSwitchToSignup={() => setCurrentPage('signup')}
+          />
+        ) : (
+          <Signup 
+            onSignup={handleSignup} 
+            onSwitchToLogin={() => setCurrentPage('login')}
+          />
+        )
       ) : (
         <Dashboard 
           user={currentUser} 
           onLogout={handleLogout}
-          showToast={showToast}
         />
       )}
-    </div>
+    </>
   );
 }
 
