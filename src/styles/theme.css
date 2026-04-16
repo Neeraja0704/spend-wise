@@ -1,0 +1,103 @@
+/* ============================
+   COLOR THEME - LIGHT MODE
+   ============================ */
+
+:root {
+  /* Background Colors */
+  --bg-primary: #F8FAFC;
+  --bg-secondary: #F1F5F9;
+  --card-bg: #FFFFFF;
+
+  /* Text Colors */
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --text-tertiary: #94A3B8;
+
+  /* Border Colors */
+  --border-color: #E5E7EB;
+  --border-light: #F3F4F6;
+
+  /* Primary & Accent */
+  --primary-color: #4F46E5;
+  --primary-hover: #4338CA;
+  --primary-light: #EEF2FF;
+
+  /* Status Colors */
+  --income-color: #16A34A;
+  --expense-color: #DC2626;
+  --warning-color: #F59E0B;
+  --success-color: #10B981;
+
+  /* Semantic Colors */
+  --error-bg: #FEF2F2;
+  --error-border: #FECACA;
+  --error-text: #7F1D1D;
+
+  --warning-bg: #FFFBEB;
+  --warning-border: #FED7AA;
+  --warning-text: #78350F;
+
+  --success-bg: #ECFDF5;
+  --success-border: #A7F3D0;
+  --success-text: #065F46;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* ============================
+   TRANSITIONS & ANIMATIONS
+   ============================ */
+
+* {
+  transition-property: background-color, border-color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* ============================
+   CSS UTILITY CLASSES
+   ============================ */
+
+.text-primary {
+  color: var(--text-primary);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-income {
+  color: var(--income-color);
+}
+
+.text-expense {
+  color: var(--expense-color);
+}
+
+.bg-income {
+  background: rgba(22, 163, 74, 0.1);
+}
+
+.bg-expense {
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.border-primary {
+  border-color: var(--primary-color);
+}
+
+.shadow-sm {
+  box-shadow: var(--shadow-sm);
+}
+
+.shadow-md {
+  box-shadow: var(--shadow-md);
+}
+
+.shadow-lg {
+  box-shadow: var(--shadow-lg);
+}
