@@ -1,0 +1,1 @@
+self.__REACT_LOADABLE_MANIFEST="{\"hooks\\\\useOffline.js -> @/lib/offlineDB\":{\"id\":\"hooks\\\\useOffline.js -> @/lib/offlineDB\",\"files\":[\"static/chunks/_app-pages-browser_lib_offlineDB_js.js\"]},\"lib\\\\offlineSync.js -> ./offlineDB\":{\"id\":\"lib\\\\offlineSync.js -> ./offlineDB\",\"files\":[\"static/chunks/_app-pages-browser_lib_offlineDB_js.js\"]}}"
