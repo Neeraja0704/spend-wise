@@ -11,12 +11,14 @@ const formatCurrency = (amount) => {
   }).format(amount);
 };
 
-export default function BudgetSection({ budget, totalExpenses, onUpdateBudget, fullView = false }) {
+export default function BudgetSection({ budget, totalExpenses = 0, onUpdateBudget, fullView = false }) {
+  // Handle both numeric and object budget values
+  const budgetAmount = typeof budget === 'object' ? budget.amount : budget;
   const [showEditModal, setShowEditModal] = useState(false);
-  const [budgetInput, setBudgetInput] = useState(budget.amount);
+  const [budgetInput, setBudgetInput] = useState(budgetAmount);
 
-  const percentage = Math.min((totalExpenses / budget.amount) * 100, 100);
-  const remaining = budget.amount - totalExpenses;
+  const percentage = Math.min((totalExpenses / budgetAmount) * 100, 100);
+  const remaining = budgetAmount - totalExpenses;
 
   const getStatusColor = () => {
     if (percentage >= 100) return { bg: 'from-red-500 to-pink-500', light: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', percent: '100%+' };
@@ -38,7 +40,7 @@ export default function BudgetSection({ budget, totalExpenses, onUpdateBudget, f
     }
     onUpdateBudget(amount);
     setShowEditModal(false);
-    setBudgetInput(budget.amount);
+    setBudgetInput(budgetAmount);
   };
 
   const status = getStatusColor();
@@ -67,7 +69,7 @@ export default function BudgetSection({ budget, totalExpenses, onUpdateBudget, f
         {/* Budget Amount */}
         <div className="mb-6">
           <p className="text-sm text-slate-600 mb-2">Total Budget</p>
-          <h2 className="text-3xl font-bold text-slate-900">{formatCurrency(budget.amount)}</h2>
+          <h2 className="text-3xl font-bold text-slate-900">{formatCurrency(budgetAmount)}</h2>
         </div>
 
         {/* Spent Amount */}
@@ -113,7 +115,7 @@ export default function BudgetSection({ budget, totalExpenses, onUpdateBudget, f
           <div className="mt-6 pt-6 border-t border-slate-200 space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-slate-600">Budget Limit</span>
-              <span className="font-semibold text-slate-900">{formatCurrency(budget.amount)}</span>
+              <span className="font-semibold text-slate-900">{formatCurrency(budgetAmount)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-600">Spent</span>

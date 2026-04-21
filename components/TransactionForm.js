@@ -49,23 +49,30 @@ export default function TransactionForm({ onAdd, onClose }) {
     setLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300));
+      const response = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type,
+          amount: parseFloat(amount),
+          category,
+          date,
+          description,
+        }),
+      });
 
-      const transaction = {
-        type,
-        amount: parseFloat(amount),
-        category,
-        date,
-        description,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-      };
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add transaction');
+      }
 
+      const transaction = await response.json();
+      toast.success('✅ Transaction added successfully!');
       onAdd(transaction);
       onClose();
     } catch (error) {
-      toast.error('Failed to add transaction');
+      console.error('Error adding transaction:', error);
+      toast.error(error.message || 'Failed to add transaction');
     } finally {
       setLoading(false);
     }

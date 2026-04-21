@@ -182,7 +182,7 @@ export default function TransactionsList({ transactions, onDelete, showFilters =
           ) : (
             filteredTransactions.map((transaction, index) => (
               <motion.div
-                key={transaction.id}
+                key={transaction._id}
                 layout
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -238,7 +238,7 @@ export default function TransactionsList({ transactions, onDelete, showFilters =
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => handleDeleteClick(transaction.id)}
+                        onClick={() => handleDeleteClick(transaction._id)}
                         className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                       >
                         <Trash2 size={18} />
@@ -246,7 +246,7 @@ export default function TransactionsList({ transactions, onDelete, showFilters =
 
                       {/* Delete Confirmation */}
                       <AnimatePresence>
-                        {deleteConfirm === transaction.id && (
+                        {deleteConfirm === transaction._id && (
                           <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -266,7 +266,7 @@ export default function TransactionsList({ transactions, onDelete, showFilters =
                               <motion.button
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                onClick={() => handleConfirmDelete(transaction.id)}
+                                onClick={() => handleConfirmDelete(transaction._id)}
                                 className="px-3 py-1 bg-red-500 text-white rounded text-sm font-medium hover:bg-red-600"
                               >
                                 Yes

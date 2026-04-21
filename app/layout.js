@@ -25,7 +25,6 @@ export const metadata = {
   formatDetection: {
     telephone: false,
   },
-  themeColor: "#6366f1",
 };
 
 export const viewport = {
@@ -33,6 +32,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
+  themeColor: "#6366f1",
 };
 
 export default function RootLayout({ children }) {

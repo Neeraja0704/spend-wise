@@ -67,28 +67,35 @@ export default function DashboardLayout() {
 
   const handleAddTransaction = async (transaction) => {
     try {
-      await addTransaction(transaction);
-
-      const totalExpenses = getTotalExpenses();
-
-      // Smart alerts
-      if (
-        totalExpenses >= budget.amount * 0.8 &&
-        totalExpenses < budget.amount
-      ) {
-        toast("⚠️ You've reached 80% of your budget", { duration: 3000 });
-      } else if (totalExpenses >= budget.amount) {
-        toast("🚨 Budget exceeded! Please review your spending", {
-          duration: 3000,
-        });
-      } else {
-        toast.success("✅ Transaction added successfully!");
-      }
-
+      const newTransaction = await addTransaction(transaction);
+      
+      // Wait a moment for state to update, then check budget
+      setTimeout(() => {
+        const currentExpenses = getTotalExpenses();
+        const budgetAmount = budget?.amount || 5000;
+        
+        // Trigger appropriate alerts based on current expenses
+        if (currentExpenses >= budgetAmount) {
+          toast.error('🚨 Budget Exceeded! You have exceeded your monthly budget', {
+            duration: 5000,
+            icon: '🚨',
+          });
+        } else if (currentExpenses >= budgetAmount * 0.8) {
+          toast('⚠️ Budget Warning: You\'ve reached 80% of your budget', {
+            duration: 5000,
+            icon: '⚠️',
+          });
+        } else {
+          toast.success('✅ Transaction added successfully', {
+            duration: 3000,
+          });
+        }
+      }, 50);
+      
       setShowTransactionForm(false);
     } catch (error) {
-      console.error("Error adding transaction:", error);
-      toast.error("Failed to add transaction");
+      console.error('Error adding transaction:', error);
+      toast.error(error.message || 'Failed to add transaction');
     }
   };
 
@@ -117,10 +124,15 @@ export default function DashboardLayout() {
       case "dashboard":
         return (
           <div className="space-y-6">
-            <DashboardCards transactions={transactions} budget={budget} />
+            <DashboardCards 
+              totalIncome={getTotalIncome()} 
+              totalExpenses={getTotalExpenses()} 
+              budget={budget} 
+              budgetStatus={getTotalExpenses() >= budget.amount ? 'exceeded' : getTotalExpenses() >= budget.amount * 0.8 ? 'warning' : 'safe'}
+            />
             <Charts transactions={transactions} />
             <BudgetSection
-              budget={budget.amount}
+              budget={budget}
               totalExpenses={getTotalExpenses()}
               onUpdateBudget={handleUpdateBudget}
             />
@@ -157,7 +169,7 @@ export default function DashboardLayout() {
               Budget Management
             </h1>
             <BudgetSection
-              budget={budget.amount}
+              budget={budget}
               totalExpenses={getTotalExpenses()}
               onUpdateBudget={handleUpdateBudget}
               fullView

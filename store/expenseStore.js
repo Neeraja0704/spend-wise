@@ -32,12 +32,15 @@ export const useExpenseStore = create((set, get) => ({
   loadTransactions: async () => {
     try {
       const response = await fetch('/api/transactions');
-      if (response.ok) {
-        const transactions = await response.json();
-        set({ transactions });
+      if (!response.ok) {
+        throw new Error(`Failed to load transactions: ${response.status}`);
       }
+      const transactions = await response.json();
+      set({ transactions });
+      return transactions;
     } catch (error) {
       console.error('Failed to load transactions:', error);
+      throw error;
     }
   },
 
@@ -50,13 +53,16 @@ export const useExpenseStore = create((set, get) => ({
         body: JSON.stringify(transactionData),
       });
 
-      if (response.ok) {
-        const newTransaction = await response.json();
-        set((state) => ({
-          transactions: [...state.transactions, newTransaction],
-        }));
-        return newTransaction;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || `Failed to add transaction: ${response.status}`);
       }
+
+      const newTransaction = await response.json();
+      set((state) => ({
+        transactions: [newTransaction, ...state.transactions],
+      }));
+      return newTransaction;
     } catch (error) {
       console.error('Failed to add transaction:', error);
       throw error;
@@ -70,11 +76,14 @@ export const useExpenseStore = create((set, get) => ({
         method: 'DELETE',
       });
 
-      if (response.ok) {
-        set((state) => ({
-          transactions: state.transactions.filter(t => t._id !== id),
-        }));
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || `Failed to delete transaction: ${response.status}`);
       }
+
+      set((state) => ({
+        transactions: state.transactions.filter(t => t._id !== id),
+      }));
     } catch (error) {
       console.error('Failed to delete transaction:', error);
       throw error;
@@ -85,12 +94,15 @@ export const useExpenseStore = create((set, get) => ({
   loadBudget: async () => {
     try {
       const response = await fetch('/api/budget');
-      if (response.ok) {
-        const budget = await response.json();
-        set({ budget });
+      if (!response.ok) {
+        throw new Error(`Failed to load budget: ${response.status}`);
       }
+      const budget = await response.json();
+      set({ budget });
+      return budget;
     } catch (error) {
       console.error('Failed to load budget:', error);
+      throw error;
     }
   },
 
@@ -103,11 +115,14 @@ export const useExpenseStore = create((set, get) => ({
         body: JSON.stringify({ amount }),
       });
 
-      if (response.ok) {
-        const updatedBudget = await response.json();
-        set({ budget: updatedBudget });
-        return updatedBudget;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || `Failed to update budget: ${response.status}`);
       }
+
+      const updatedBudget = await response.json();
+      set({ budget: updatedBudget });
+      return updatedBudget;
     } catch (error) {
       console.error('Failed to update budget:', error);
       throw error;
